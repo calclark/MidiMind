@@ -1,0 +1,11 @@
+[package]
+name = "midimind"
+version = "0.0.1"
+authors = ["calclark <cadeclark16@gmail.com>"]
+edition = "2018"
+description = "A command line tool for algorithmic composition based in machine learning"
+readme = "README.md"
+repository = "https://github.com/calclark/midimind"
+license = "GNU General Public License v3.0 only"
+keywords = ["midi", "composition", "machine-learning", "music"]
+categories = ["command-line-utilities", "multimedia", "multimedia::audio", "science", "mathematics"]
