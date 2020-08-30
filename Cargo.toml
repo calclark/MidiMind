@@ -9,3 +9,6 @@ repository = "https://github.com/calclark/midimind"
 license = "GNU General Public License v3.0 only"
 keywords = ["midi", "composition", "machine-learning", "music"]
 categories = ["command-line-utilities", "multimedia", "multimedia::audio", "science", "mathematics"]
+
+[dev-dependencies]
+proptest = "0.10.1"
