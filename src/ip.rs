@@ -1,38 +1,38 @@
 use std::{collections::HashMap, hash::Hash};
 
-fn gen_motif_dictionary<T>(symbols: &[T]) -> HashMap<Vec<T>, u32>
+fn gen_motif_dictionary<T>(symbols: &[T]) -> HashMap<Vec<&T>, u32>
 where
-    T: Eq + Hash + Copy,
+    T: Eq + Hash,
 {
-    let mut dictionary = HashMap::new();
-    let mut motif = vec![];
+    let mut dict = HashMap::new();
+    let mut curr_motif = Vec::new();
 
     for symbol in symbols {
-        motif.push(*symbol);
+        curr_motif.push(symbol);
 
-        if let Some(c) = dictionary.get_mut(&motif) {
-            *c += 1;
+        if let Some(count) = dict.get_mut(&curr_motif) {
+            *count += 1;
         } else {
-            dictionary.insert(motif, 1);
-            motif = vec![];
+            dict.insert(curr_motif, 1);
+            curr_motif = Vec::new();
         }
     }
 
-    dictionary
+    dict
 }
 
-fn gen_ip_continuations<T>(motifs: HashMap<Vec<T>, u32>) -> HashMap<Vec<T>, Vec<(T, u32)>>
+fn gen_continuations<T>(dict: HashMap<Vec<T>, u32>) -> HashMap<Vec<T>, Vec<(T, u32)>>
 where
     T: Eq + Hash + Copy,
 {
     let mut conts: HashMap<Vec<T>, Vec<(T, u32)>> = HashMap::new();
 
-    for (motif, count) in motifs {
+    for (motif, count) in dict {
         let context = &motif[..(motif.len() - 1)];
         let symbol = &motif[motif.len() - 1];
 
-        if let Some(c) = conts.get_mut(context) {
-            c.push((*symbol, count));
+        if let Some(nexts) = conts.get_mut(context) {
+            nexts.push((*symbol, count));
         } else {
             conts.insert(context.to_vec(), vec![(*symbol, count)]);
         }
@@ -47,26 +47,26 @@ fn normalize_continuations<T>(
 where
     T: Eq + Hash,
 {
-    let mut normalized_conts = HashMap::new();
+    let mut norm_conts = HashMap::new();
 
-    for (context, symbols) in conts {
-        let mut probabilities = vec![];
-        let total_count = symbols.iter().fold(0, |acc, (_, count)| acc + count);
-        for symbol in symbols {
-            probabilities.push((symbol.0, symbol.1 as f64 / total_count as f64));
+    for (context, next_symbols) in conts {
+        let mut probs = Vec::new();
+        let total_count = next_symbols.iter().fold(0, |acc, (_, count)| acc + count);
+        for next in next_symbols {
+            probs.push((next.0, next.1 as f64 / total_count as f64));
         }
-        normalized_conts.insert(context, probabilities);
+        norm_conts.insert(context, probs);
     }
 
-    normalized_conts
+    norm_conts
 }
 
-pub fn gen_incremental_parse_tree<T>(symbols: &[T]) -> HashMap<Vec<T>, Vec<(T, f64)>>
+pub fn gen_incremental_parse_tree<T>(symbols: &[T]) -> HashMap<Vec<&T>, Vec<(&T, f64)>>
 where
-    T: Eq + Hash + Copy,
+    T: Eq + Hash,
 {
-    let motifs = gen_motif_dictionary(symbols);
-    let conts = gen_ip_continuations(motifs);
+    let dict = gen_motif_dictionary(symbols);
+    let conts = gen_continuations(dict);
     normalize_continuations(conts)
 }
 
@@ -85,10 +85,10 @@ mod tests {
         assert_eq!(actual.len(), 4);
 
         for exp in vec![
-            (vec![], vec![("a", 6.0 / 7.0), ("b", 1.0 / 7.0)]),
-            (vec!["a"], vec![("b", 1.0)]),
-            (vec!["a", "b"], vec![("c", 0.75), ("d", 0.25)]),
-            (vec!["a", "b", "c"], vec![("d", 0.5), ("e", 0.5)]),
+            (vec![], vec![(&"a", 6.0 / 7.0), (&"b", 1.0 / 7.0)]),
+            (vec![&"a"], vec![(&"b", 1.0)]),
+            (vec![&"a", &"b"], vec![(&"c", 0.75), (&"d", 0.25)]),
+            (vec![&"a", &"b", &"c"], vec![(&"d", 0.5), (&"e", 0.5)]),
         ] {
             let conts = actual.get(&exp.0).unwrap();
             assert!(conts.len() == exp.1.len());
